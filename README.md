@@ -8,6 +8,7 @@ This is a single file java file, compile using java 1.8, should works with >1.6(
 No additional third-party lib needed.
 
 Usage:
+
 #1. edit godaddy_ddns.prop, change the domain name/ key/ secret for your own web site
 
 #2. java -jar Godaddy_ddns.jar 
