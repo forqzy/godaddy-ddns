@@ -1,0 +1,4 @@
+domain= yourdomain.com
+subdomain= @
+key= replace-with-yourkey
+secret= replace-with-yoursecret
