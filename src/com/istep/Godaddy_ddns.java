@@ -18,21 +18,24 @@ import javax.net.ssl.HttpsURLConnection;
  * <p>
  * <p>
  * Reference:
- * Author£ºJellyCai
- * Link£ºhttp://www.jianshu.com/p/0842b888d94a
+ * Author JellyCai
+ * Link http://www.jianshu.com/p/0842b888d94a
  */
 
 
 public class Godaddy_ddns {
     private final String USER_AGENT = "Mozilla/5.0";
     private static boolean keepRunning =true;
+    private static String ipaddress = "";    //as the checking ip address thread may stuck so put in thread
+    private static int count =0;
+
+    static String domain = "yourdomain.com";
+    static String subdomain ="@";
+    static String key ="yourkey"; //https://developer.godaddy.com/keys/.
+    static String secret = "yoursecret"; //https://developer.godaddy.com/keys/.
 
     public static void main(String[] args) throws Exception {
-        String ipaddress = "";
-        String domain = "yourdomain.com";
-        String subdomain ="@";
-        String key ="yourkey"; //https://developer.godaddy.com/keys/.
-        String secret = "yoursecret"; //https://developer.godaddy.com/keys/.
+
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 
@@ -60,29 +63,41 @@ public class Godaddy_ddns {
 
         Godaddy_ddns http = new Godaddy_ddns();
         do {
-            try {
-                String myIP = http.sendGet();
-                if (myIP != null && !myIP.equalsIgnoreCase(ipaddress)) {
-                    Date today = Calendar.getInstance().getTime();
-                    String reportDate = df.format(today);
-
-
-                    System.out.println(String.format("[%s]Found IP change start change ip %s to %s",reportDate,ipaddress,myIP));
-                    if(http.sendPost(domain,subdomain,myIP,key,secret)) {
-                        ipaddress = myIP;
-                    }
-
+            count++;
+            new Thread(){
+                @Override
+                public void run() {
+                    _checkingIP(domain, subdomain, key, secret, df, http,count);
                 }
-            } catch (Exception exp) {
-                exp.printStackTrace();
-            }
+            }.start();
 
             try{
                 Thread.sleep(10000);
             }catch (Exception ignore){
-
             }
         } while (keepRunning);
+    }
+
+    //as checking ip may stuck after running 1 month, so no synchronized used here,just skip the failed connection.
+    private static void  _checkingIP(String domain, String subdomain, String key, String secret, DateFormat df, Godaddy_ddns http,int cnt) {
+        try {
+            String myIP = http.sendGet();
+            Date today = Calendar.getInstance().getTime();
+            String reportDate = df.format(today);
+
+            if (myIP != null && !myIP.equalsIgnoreCase(ipaddress)) {
+                System.out.println(String.format("%d[%s]Found IP change start change ip from %s to %s",cnt,reportDate,ipaddress,myIP));
+                if(http.sendPost(domain,subdomain,myIP,key,secret)) {
+                    ipaddress = myIP;
+                }
+
+            }else {
+                System.out.println(String.format("%d[%s]IP not change  %s",cnt,reportDate,myIP));
+            }
+        } catch (Exception exp) {
+            exp.printStackTrace();
+            System.out.println(exp.toString());
+        }
     }
 
 
